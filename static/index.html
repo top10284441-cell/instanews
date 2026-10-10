@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>InstaBonus AI - 1:1 이미지 자동 양산 스튜디오</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=20261009_v16">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="인스타AI">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#121212">
+  <style>
+    .compact-brand { padding-bottom: 8px !important; border-bottom: 1px solid #2e2e36; }
+    .channel-header-compact { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .channel-target-text { font-size: 11px; font-weight: 700; color: #00ffcc; background: rgba(0, 255, 204, 0.08); border: 1px solid rgba(0, 255, 204, 0.25); padding: 2px 8px; border-radius: 10px; }
+    .channel-pill-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; width: 100% !important; margin: 4px 0 !important; }
+    .channel-pill-btn {
+      height: 38px !important;
+      background: #191920 !important;
+      border: 1px solid #2e2e3a !important;
+      border-radius: 8px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      cursor: pointer !important;
+      padding: 0 8px !important;
+      color: #b0b0c0 !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      transition: all 0.15s ease !important;
+      outline: none !important;
+      box-sizing: border-box !important;
+    }
+    .channel-pill-btn:hover { background: #23232c !important; border-color: #444455 !important; color: #fff !important; }
+    .channel-pill-btn.active {
+      background: linear-gradient(135deg, #e1306c 0%, #f77737 100%) !important;
+      border-color: transparent !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      box-shadow: 0 3px 12px rgba(225, 48, 108, 0.45) !important;
+    }
+    .channel-pill-btn .cp-icon { font-size: 15px; line-height: 1; }
+    .channel-pill-btn .cp-title { white-space: nowrap; letter-spacing: -0.3px; }
+    .btn-harvest-hero {
+      width: 100% !important;
+      height: 44px !important;
+      background: linear-gradient(135deg, #ff3366 0%, #ff6b3d 100%) !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 10px !important;
+      font-size: 13px !important;
+      font-weight: 800 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      cursor: pointer !important;
+      box-shadow: 0 4px 16px rgba(255, 51, 102, 0.35) !important;
+      outline: none !important;
+    }
+    .btn-harvest-hero:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(255, 51, 102, 0.55) !important; }
+    .btn-harvest-hero:active { transform: translateY(0); }
+    .sub-actions-row { display: flex !important; gap: 6px !important; margin-top: 6px !important; }
+    .btn-sub-compact {
+      flex: 1 !important;
+      height: 30px !important;
+      background: #181820 !important;
+      border: 1px solid #2a2a35 !important;
+      color: #888899 !important;
+      border-radius: 6px !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+    }
+    .btn-sub-compact:hover { background: #22222c !important; color: #fff !important; border-color: #444455 !important; }
+  </style>
+</head>
+<body>
+  <div class="studio-layout">
+    <!-- 📱 모바일 전용 상단 탭 네비게이션 -->
+    <div class="mobile-nav-bar" id="mobile-nav-bar">
+      <button type="button" class="mobile-nav-btn active" id="btn-tab-controls" onclick="switchMobileTab('controls')">
+        <span>🎛️</span> 발굴 & 설정
+      </button>
+      <button type="button" class="mobile-nav-btn" id="btn-tab-studio" onclick="switchMobileTab('studio')">
+        <span>🖼️</span> 카드뉴스 보기 <span id="mobile-card-count" class="badge">0</span>
+      </button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 🎛️ 좌측 제어 사이드바 (영상과 1:1 완벽 일치) -->
+    <!-- ============================================== -->
+    <aside class="sidebar" id="sidebar-panel">
+      <div class="sidebar-header compact-brand">
+        <div class="brand-row">
+          <span class="brand-icon">⚡</span>
+          <span class="brand-name">InstaBonus AI</span>
+        </div>
+      </div>
+
+      <!-- 🎯 1. 인스타그램 4대 채널 (컴팩트 2줄 알약 탭) -->
+      <div class="side-group channel-selector-group">
+        <div class="channel-header-compact">
+          <label class="group-title">🎯 발행 채널</label>
+          <span class="channel-target-text" id="current-channel-badge">🏛️ @today.issue.kr</span>
+        </div>
+        
+        <div class="channel-pill-grid" id="channel-tabs-group">
+          <!-- 1줄 -->
+          <button type="button" class="channel-pill-btn active" data-channel="today_events" data-name="정치/사건" data-handle="@today.issue.kr" data-btn-label="[정치/사건] 최신 뉴스">
+            <span class="cp-icon">🏛️</span>
+            <span class="cp-title">정치 · 사건</span>
+          </button>
+
+          <button type="button" class="channel-pill-btn" data-channel="baseball" data-name="한국 야구" data-handle="@today.sports.kr" data-btn-label="[한국 야구] 최신 이슈">
+            <span class="cp-icon">⚾</span>
+            <span class="cp-title">한국 야구</span>
+          </button>
+
+          <!-- 2줄 -->
+          <button type="button" class="channel-pill-btn" data-channel="animals" data-name="동물/힐링" data-handle="@puppy.daily_7" data-btn-label="[동물/힐링] 최신 사연">
+            <span class="cp-icon">🐶</span>
+            <span class="cp-title">동물 · 힐링</span>
+          </button>
+
+          <button type="button" class="channel-pill-btn" data-channel="celebrity" data-name="한국 연예인" data-handle="@star.issue.kr" data-btn-label="[한국 연예인] 최신 이슈">
+            <span class="cp-icon">⭐</span>
+            <span class="cp-title">한국 연예인</span>
+          </button>
+        </div>
+
+        <select id="sel-channel" style="display:none;">
+          <option value="today_events" selected>사건으로 보는 오늘 (@today.issue.kr)</option>
+          <option value="baseball">한국 야구 (@today.sports.kr)</option>
+          <option value="animals">동물 게시물 (@puppy.daily_7)</option>
+          <option value="celebrity">한국 연예인 (@star.issue.kr)</option>
+        </select>
+
+        <label class="checkbox-row compact-chk">
+          <input type="checkbox" id="chk-auto-publish">
+          <span class="chk-label">생성 즉시 인스타로 자동 전송</span>
+        </label>
+      </div>
+
+      <!-- 🌐 2. 작성 언어 설정 (영상과 1:1 일치) -->
+      <div class="side-group">
+        <label class="group-title">작성 언어 설정</label>
+        <span class="input-sublabel">Target Language</span>
+        <select id="sel-lang" class="custom-select">
+          <option value="ko" selected>한국어</option>
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
+          <option value="fr">Français</option>
+          <option value="es">Español</option>
+          <option value="pt">Português</option>
+          <option value="de">Deutsch</option>
+        </select>
+        <p class="hint-text">AI가 제목과 본문을 위 언어로 자동 작성합니다.</p>
+      </div>
+
+      <!-- 📁 3. 데이터 입력 (영상과 1:1 일치) -->
+      <div class="side-group">
+        <label class="group-title">데이터 입력</label>
+        <button type="button" id="btn-auto-harvest" class="btn-harvest-hero" style="margin-bottom:6px;">
+          🚀 [정치/사건] 최신 뉴스 3개 자동 발굴
+        </button>
+        <button type="button" id="btn-folder-upload" class="btn-side-outline">
+          📁 폴더 업로드
+        </button>
+        <button type="button" id="btn-clear-queue" class="btn-side-outline">
+          🗑️ 목록 비우기
+        </button>
+        <input type="file" id="folder-input" webkitdirectory directory multiple style="display:none;">
+        <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
+      </div>
+
+      <!-- 🖼️ 4. 로고 설정 (영상과 1:1 일치, [제거] 버튼 탑재) -->
+      <div class="side-group">
+        <label class="group-title">로고 설정</label>
+        <button type="button" id="btn-upload-logo" class="btn-side-outline">
+          ✓ 로고 변경
+        </button>
+        <input type="file" id="logo-file-input" accept="image/*" style="display:none;">
+        <input type="text" id="input-logo-text" class="custom-input" placeholder="채널 로고 텍스트 (비워두면 로고 없음)" value="">
+        
+        <div class="logo-pos-header" style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+          <span style="font-size:12px; color:var(--text-muted); font-weight:600;">로고 위치</span>
+          <button type="button" id="btn-remove-logo" style="background:none; border:none; color:#ff4d6d; font-size:12px; font-weight:700; cursor:pointer;">제거</button>
+        </div>
+        <div class="segmented-control" id="logo-pos-group">
+          <button type="button" class="seg-btn" data-pos="left">왼쪽</button>
+          <button type="button" class="seg-btn active" data-pos="center">중간</button>
+          <button type="button" class="seg-btn" data-pos="right">오른쪽</button>
+        </div>
+      </div>
+
+      <!-- 📝 5. 스타일 샘플 (작성 예시, 영상과 1:1 일치) -->
+      <div class="side-group">
+        <label class="group-title">스타일 샘플 (작성 예시)</label>
+        <textarea id="txt-style-sample" class="custom-textarea" rows="4" placeholder="[제목] 가고 싶은 여행지 [본문] 여기 진짜 대박이에요...&#10;(이모지 활용)"></textarea>
+        <p class="hint-text">샘플 양식을 입력하면 AI가 제목과 본문 구성을 완벽히 학습합니다.</p>
+      </div>
+
+      <!-- ⚡ 실행 및 내보내기 버튼 (영상과 1:1 일치) -->
+      <div class="side-bottom-actions">
+        <button type="button" id="btn-run-generate" class="btn-run-action">
+          ⚡ 1:1 이미지 순차 변환
+        </button>
+        <div class="side-util-row">
+          <button type="button" id="btn-open-qr" class="btn-util">
+            📱 폰 연결 (QR)
+          </button>
+          <button type="button" id="btn-export-all" class="btn-util">
+            💾 전체 다운로드
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================== -->
+    <!-- 🖼️ 우측 메인 카드 스튜디오 (영상과 1:1 일치) -->
+    <!-- ============================================== -->
+    <main class="main-studio" id="studio-panel">
+      <!-- 상단 글로벌 바 -->
+      <header class="studio-header">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="제작된 카드뉴스 검색..." id="input-search">
+        </div>
+        <div class="status-indicator">
+          <span class="dot-online"></span>
+          <span id="conn-status-text">인스타 계정 연동됨</span>
+        </div>
+      </header>
+
+      <!-- 카드뉴스 가로 스크롤 스트림 -->
+      <div id="cards-container" class="cards-stream">
+        <div class="empty-placeholder">
+          <span class="empty-icon">☕</span>
+          <h3>제작된 콘텐츠가 없습니다</h3>
+          <p>좌측의 <strong>[⚡ 1:1 이미지 순차 변환]</strong> 버튼을 누르면<br>AI가 유튜브 영상과 동일한 고화질 카드뉴스를 즉시 양산합니다.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 스마트폰 접속용 QR 모달 -->
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📱 스마트폰에서 열기</h3>
+        <button type="button" id="btn-close-qr" class="btn-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="qr-guide">
+          1. 스마트폰 카메라로 QR을 찍어 접속하세요.<br>
+          2. 브라우저 우측 상단 <strong>메뉴(⋮) ➔ [홈 화면에 추가]</strong>를 누르면<br>
+          스마트폰 바탕화면에 <strong>전용 앱 아이콘</strong>이 생성되어 언제든 바로 실행됩니다!
+        </p>
+        <div class="qr-img-wrapper">
+          <img src="/static/qr.png" alt="QR코드" class="qr-img">
+        </div>
+        <div class="qr-url-box">
+          <span id="qr-server-url">http://192.168.45.20:8555</span>
+          <button type="button" id="btn-copy-url" class="btn-text">주소 복사</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 메시지 -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/static/app.js?v=20261009_v17"></script>
+</body>
+</html>
