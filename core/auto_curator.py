@@ -510,8 +510,8 @@ def auto_generate_curated_posts(
             title = ai_data.get("hooking_title", story["original_title"])
             points = ai_data.get("story_points", [story["original_title"]])
             caption = ai_data.get("caption", "")
-            tags = " ".join(ai_data.get("hashtags", []))
-            disclaimer = "\n\n📌 출처: 뉴스 보도 및 공개 자료 인용\n📩 저작권 관련 문의는 DM 주시면 즉시 삭제 처리해 드립니다."
+            cta = "\n\n💡 나중에 다시 보시려면 오른쪽 아래 [저장(북마크)]을 눌러두세요!\n📢 친구/지인에게 공유하고 함께 소식을 나눠보세요!"
+            disclaimer = f"{cta}\n\n📌 출처: 뉴스 보도 및 공개 자료 인용\n📩 저작권 관련 문의는 DM 주시면 즉시 삭제 처리해 드립니다."
             full_caption = f"{caption}{disclaimer}\n\n.\n.\n{tags}" if tags else f"{caption}{disclaimer}"
 
             # 3. [1번 표지 슬라이드] 렌더링 (영상과 동일한 풀이미지 + 하단 다크 그라데이션)
