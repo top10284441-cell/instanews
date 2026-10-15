@@ -385,11 +385,7 @@ def auto_generate_curated_posts(
 
     viral_items = fetch_real_viral_stories(category=category, channel_id=channel_id, limit=count)
     if len(viral_items) < count:
-        # 채널 전용인 경우 일반 바이럴(동물/유머)로 왜곡되지 않도록 같은 피드에서 seen을 무시하고 신선한 기사 재검색 (삭제된 기사는 여전히 차단)
-        if channel_id in ("baseball", "celebrity") or category in ("스포츠 게시물", "연예인 게시물"):
-            viral_items = fetch_real_viral_stories(category=category, channel_id=channel_id, limit=count, ignore_seen=True)
-        else:
-            viral_items = fetch_real_viral_stories(category="종합/인기", channel_id="default", limit=count)
+        viral_items = fetch_real_viral_stories(category=category, channel_id=channel_id, limit=count, ignore_seen=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     curated_dir = OUTPUT_DIR / f"viral_{timestamp}_{lang}"
