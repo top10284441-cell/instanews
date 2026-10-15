@@ -4,3 +4,8 @@ __pycache__/
 output/
 captures/
 *.log
+
+# 로컬 런타임 상태 파일 — GitHub Actions에 포함되면 새 기사를 차단함
+seen_stories.json
+deleted_stories.json
+queue.json
