@@ -228,6 +228,9 @@ def fetch_real_viral_stories(category: str = "종합/인기", channel_id: str = 
 
                 # ⚾ 한국 야구 모드일 때 엄격 검증
                 if is_baseball_mode:
+                    # 타 종목 URL(농구, 축구, 골프, 배구 등) 원천 차단
+                    if any(other in link for other in ["/basketball/", "/football/", "/golf/", "/volleyball/", "/general/"]):
+                        continue
                     if any(ex in title for ex in EXCLUDE_ALL_NON_BASEBALL):
                         continue
                     if any(mlb in title for mlb in MLB_EXCLUDE):
@@ -242,9 +245,12 @@ def fetch_real_viral_stories(category: str = "종합/인기", channel_id: str = 
                     if any(no in title for no in EXCLUDE_NON_MATCH_TOPICS):
                         continue
 
-                    # 반드시 한국 프로야구(KBO 10개 구단 또는 KBO 키워드) 관련이어야 함
-                    is_kbo = ("/baseball/" in link) or any(team in title for team in KBO_TEAMS) or any(kw in title for kw in KBO_KEYWORDS)
-                    if not is_kbo:
+                    # 반드시 한국 프로야구(KBO 리그) 관련이어야 함 (/baseball/ URL 또는 명확한 KBO 야구 키워드 필수)
+                    has_baseball_url = ("/baseball/" in link)
+                    has_baseball_keyword = any(kw in title for kw in KBO_KEYWORDS)
+                    has_kbo_team = any(team in title for team in KBO_TEAMS)
+                    
+                    if not (has_baseball_url or (has_kbo_team and has_baseball_keyword)):
                         continue
                     # 이미지 URL이 없더라도 링크를 보존하여 선별 시 og:image 추출 가능하도록 저장
                     raw_candidates.append((title, img_url, clean_desc, link, pub_display, dt_obj))
