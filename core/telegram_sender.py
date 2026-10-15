@@ -62,7 +62,14 @@ def send_card_to_telegram(bot_token: str, chat_id: str, post: dict, channel_name
         title = post.get("title", "")
         caption = post.get("caption", "")
 
-        photo_caption = f"⚾ [{channel_name}]\n🔥 {title}"
+        channel_emojis = {
+            "한국 야구": "⚾",
+            "한국 연예인": "⭐",
+            "사건/이슈": "🚨",
+            "동물/힐링": "🐾"
+        }
+        ch_emoji = channel_emojis.get(channel_name, "📰")
+        photo_caption = f"{ch_emoji} [{channel_name}]\n🔥 {title}"
         
         # 1. 사진 전송 (요약 캡션 포함)
         send_telegram_photo(bot_token, chat_id, img_path, caption=photo_caption)
