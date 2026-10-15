@@ -1,6 +1,13 @@
 import os
+import sys
 import requests
 from pathlib import Path
+
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 
 def send_telegram_message(bot_token: str, chat_id: str, text: str) -> dict:
     """텔레그램 일반 텍스트 메시지 발송"""
