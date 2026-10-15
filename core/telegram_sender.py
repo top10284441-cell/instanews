@@ -76,9 +76,8 @@ def send_card_to_telegram(bot_token: str, chat_id: str, post: dict, channel_name
         # 1. 사진 전송 (요약 캡션 포함)
         send_telegram_photo(bot_token, chat_id, img_path, caption=photo_caption)
 
-        # 2. 인스타 복사용 전체 본문 텍스트 전송 (글자 수 제한 없이 깔끔하게 복사 가능)
-        copyable_text = f"📋 [인스타 본문 복사용 - {title}]\n━━━━━━━━━━━━━━━━━━━━\n{caption}"
-        send_telegram_message(bot_token, chat_id, copyable_text)
+        # 2. 인스타그램 전체 본문 텍스트 전송 (복사 시 바로 인스타에 붙여넣을 수 있도록 순수 본문만 전송)
+        send_telegram_message(bot_token, chat_id, caption)
         
         print(f"✅ 텔레그램 전송 완료: {title}")
         return True
