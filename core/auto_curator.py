@@ -44,6 +44,26 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 }
 
+def parse_korean_pubdate(pubdate_str: str) -> tuple:
+    """
+    RSS pubDate 문자열을 파싱하여 (표시용 'YYYY.MM.DD HH:mm', datetime(KST)) 반환
+    """
+    from email.utils import parsedate_to_datetime
+    import datetime as dt_mod
+    kst = dt_mod.timezone(dt_mod.timedelta(hours=9))
+    now = datetime.now(kst)
+    if not pubdate_str:
+        return now.strftime("%Y.%m.%d"), now
+    try:
+        dt = parsedate_to_datetime(pubdate_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=kst)
+        else:
+            dt = dt.astimezone(kst)
+        return dt.strftime("%Y.%m.%d %H:%M"), dt
+    except Exception:
+        return now.strftime("%Y.%m.%d"), now
+
 SEEN_FILE = BASE_DIR / "seen_stories.json"
 DELETED_FILE = BASE_DIR / "deleted_stories.json"
 
@@ -181,6 +201,15 @@ def fetch_real_viral_stories(category: str = "종합/인기", channel_id: str = 
                 if any(bad in clean_desc for bad in POLITICAL_BLACKLIST):
                     continue
 
+                pubdate_text = it.find("pubDate").text.strip() if it.find("pubDate") is not None and it.find("pubDate").text else ""
+                pub_display, dt_obj = parse_korean_pubdate(pubdate_text)
+
+                # 스포츠/연예/뉴스는 최근 48시간 이내 기사만 엄격 수집 (오래된 과거 기사 원천 차단)
+                if channel_id in ("baseball", "celebrity", "today_events") or category in ("스포츠 게시물", "연예인 게시물", "사건으로 보는 오늘"):
+                    age_hours = (datetime.now(dt_obj.tzinfo) - dt_obj).total_seconds() / 3600
+                    if age_hours > 48:
+                        continue
+
                 # 이미지 찾기 (content, enclosure, thumbnail, desc img 태그)
                 img_url = None
                 media = it.find("{http://search.yahoo.com/mrss/}content") or it.find("{http://search.yahoo.com/mrss/}thumbnail")
@@ -216,7 +245,7 @@ def fetch_real_viral_stories(category: str = "종합/인기", channel_id: str = 
                     if not is_kbo:
                         continue
                     # 이미지 URL이 없더라도 링크를 보존하여 선별 시 og:image 추출 가능하도록 저장
-                    raw_candidates.append((title, img_url, clean_desc, link))
+                    raw_candidates.append((title, img_url, clean_desc, link, pub_display, dt_obj))
 
                 # ⭐ 한국 연예인 모드일 때 엄격 검증
                 elif is_celebrity_mode:
@@ -226,12 +255,12 @@ def fetch_real_viral_stories(category: str = "종합/인기", channel_id: str = 
                         continue
                     if title.startswith("[포토]") or title.startswith("[사진]"):
                         continue
-                    raw_candidates.append((title, img_url, clean_desc, link))
+                    raw_candidates.append((title, img_url, clean_desc, link, pub_display, dt_obj))
 
                 else:
                     if not img_url:
                         continue
-                    raw_candidates.append((title, img_url, clean_desc, link))
+                    raw_candidates.append((title, img_url, clean_desc, link, pub_display, dt_obj))
         except Exception as e:
             print("Error fetching feed:", feed_url, e)
 
@@ -306,7 +335,7 @@ def fetch_real_viral_stories(category: str = "종합/인기", channel_id: str = 
 
         # 1차: 각 카드마다 서로 다른 대표 구단(KIA, 삼성, 두산, SSG 등) 무조건 1개씩 선발
         for cand in raw_candidates:
-            t, img_url, clean_desc, cand_link = cand
+            t, img_url, clean_desc, cand_link, pub_display, dt_obj = cand
             p_team = get_primary_team(t)
             
             # 이미 선택된 구단과 겹치면 절대 선발하지 않음! (LG 독점 및 특정 구단 편중 차단)
@@ -321,44 +350,51 @@ def fetch_real_viral_stories(category: str = "종합/인기", channel_id: str = 
 
             if p_team != "기타":
                 selected_primary_teams.add(p_team)
-            chosen.append((t, img_url, clean_desc))
+            chosen.append((t, img_url, clean_desc, pub_display))
             if len(chosen) >= limit:
                 break
 
         # 2차: 서로 다른 구단으로 limit를 다 못 채운 경우 나머지 후보 기사에서 보충
         if len(chosen) < limit:
             for cand in raw_candidates:
-                t, img_url, clean_desc, cand_link = cand
+                t, img_url, clean_desc, cand_link, pub_display, dt_obj = cand
                 if any(c[0] == t for c in chosen):
                     continue
                 if not img_url and cand_link:
                     img_url = fetch_og_image(cand_link)
                 if not img_url:
                     continue
-                chosen.append((t, img_url, clean_desc))
+                chosen.append((t, img_url, clean_desc, pub_display))
                 if len(chosen) >= limit:
                     break
 
-        for title, img_url, clean_desc in chosen:
+        for title, img_url, clean_desc, pub_display in chosen:
             save_seen_story(title)
             stories.append({
                 "original_title": title,
                 "image_url": img_url,
-                "description": clean_desc[:300]
+                "description": clean_desc[:300],
+                "pub_date": pub_display
             })
             if len(stories) >= limit:
                 break
     else:
-        random.shuffle(raw_candidates)
+        # ⭐ 연예인, 사건/이슈는 최신 발행일자 순(dt_obj 내림차순)으로 정렬! 동물/힐링만 무작위 셔플
+        if channel_id in ("celebrity", "today_events") or category in ("연예인 게시물", "사건으로 보는 오늘"):
+            raw_candidates.sort(key=lambda c: c[5], reverse=True)
+        else:
+            random.shuffle(raw_candidates)
+
         for cand in raw_candidates:
-            title, img_url, clean_desc = cand[0], cand[1], cand[2]
+            title, img_url, clean_desc, cand_link, pub_display, dt_obj = cand
             if not img_url:
                 continue
             save_seen_story(title)
             stories.append({
                 "original_title": title,
                 "image_url": img_url,
-                "description": clean_desc[:300]
+                "description": clean_desc[:300],
+                "pub_date": pub_display
             })
             if len(stories) >= limit:
                 break
@@ -442,12 +478,15 @@ def auto_generate_curated_posts(
 - 외국의 할리우드 스타는 배제하고, 국내 팬들이 즉각 반응하고 댓글이 폭발할 수 있는 한국 스타들의 이야기로 호기심을 극대화하세요.
 """
 
+        pub_date_val = story.get("pub_date", "")
+        date_prompt_line = f"보도 일시: {pub_date_val} (가장 최신의 시의성 있는 사건/경기이므로 오늘 보도된 최신 뉴스로 박진감 있게 서술하세요)\n" if pub_date_val else ""
+
         # 2. GPT-4o Vision 기반 기획 (사진 속 실제 인물/구단/장면과 100% 일치하도록 검증)
         prompt = f"""
-다음은 실제 화제의 뉴스 및 스토리입니다:
+다음은 실제 화제의 최신 뉴스 및 스토리입니다:
 원문 제목: "{story['original_title']}"
 원문 내용 요약: "{story['description']}"
-
+{date_prompt_line}
 인스타그램 카드뉴스(1번 표지 슬라이드 + 2번 사연 요약 슬라이드)를 기획해 주세요.
 타겟 언어: {lang} ({lang_instructions.get(lang, '한국어')})
 {style_instruction}
@@ -515,7 +554,10 @@ def auto_generate_curated_posts(
             raw_tags = ai_data.get("hashtags", [])
             tags = " ".join([t if t.startswith("#") else f"#{t}" for t in raw_tags]) if raw_tags else ""
             cta = "\n\n💡 나중에 다시 보시려면 오른쪽 아래 [저장(북마크)]을 눌러두세요!\n📢 친구/지인에게 공유하고 함께 소식을 나눠보세요!"
-            disclaimer = f"{cta}\n\n📌 출처: 뉴스 보도 및 공개 자료 인용\n📩 저작권 관련 문의는 DM 주시면 즉시 삭제 처리해 드립니다."
+            
+            pub_date_str = story.get("pub_date", "")
+            date_info = f" ({pub_date_str} 보도)" if pub_date_str else ""
+            disclaimer = f"{cta}\n\n📌 출처: 언론사 보도 인용{date_info}\n📩 저작권 관련 문의는 DM 주시면 즉시 삭제 처리해 드립니다."
             full_caption = f"{caption}{disclaimer}\n\n.\n.\n{tags}" if tags else f"{caption}{disclaimer}"
 
             # 3. [1번 표지 슬라이드] 렌더링 (영상과 동일한 풀이미지 + 하단 다크 그라데이션)
@@ -539,6 +581,7 @@ def auto_generate_curated_posts(
                 "channel_id": channel_id,
                 "title": title.replace("\n", " "),
                 "caption": full_caption,
+                "pub_date": pub_date_str,
                 "image_url": slide1_url,
                 "slides": [slide1_url],
                 "raw_image_path": str(raw_img_path),
